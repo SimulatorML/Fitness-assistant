@@ -1,0 +1,41 @@
+services:
+  bot_app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+  redis:
+    image: redis:latest
+    command:
+      - redis-server
+    env_file:
+      - .env
+    restart: on-failure
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: postgres
+    env_file:
+      - .env
+    restart: on-failure
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+  
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: on-failure
+    ports:
+      - "8888:80"
+    env_file:
+      - .env
+    volumes:
+      - ./pgadmin-data:/var/lib/pgadmin
+
+volumes:
+  postgres-data:
+  pgadmin-data:
