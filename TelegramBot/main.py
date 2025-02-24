@@ -8,7 +8,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (CallbackQuery, InlineKeyboardButton,
                            InlineKeyboardMarkup, Message, PhotoSize)
 
-
+# Загрузка переменных окружения
 load_dotenv()
 
 # Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
