@@ -1,0 +1,28 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: fitness
+      POSTGRES_PASSWORD: fitness
+      POSTGRES_DB: fitness
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data # на unix системе использовать ./data вместо pgdata для локального хранения бд
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m api
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+volumes: # удалить этот раздел если используется ./data
+  pgdata:
