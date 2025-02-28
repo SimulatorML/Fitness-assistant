@@ -3,16 +3,17 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
-
 from src.views import users, llm
+
 
 __all__ = ["get_application"]
 
 
 def get_application() -> FastAPI:
     app = FastAPI(
-        title="Fitness Assistant API"
+        title="Fitness Assistant API" # title for docs
     )
+    # request processors
     app.add_middleware(middleware_class=ProxyHeadersMiddleware, trusted_hosts=["*"])
     app.add_middleware(middleware_class=GZipMiddleware)
     app.add_middleware(middleware_class=TrustedHostMiddleware, allowed_hosts=("*",))

@@ -4,7 +4,7 @@ asyncpg==0.30.0
 click==8.1.8
 dnspython==2.7.0
 email_validator==2.2.0
-fastapi==0.115.8
+fastapi==0.115.9
 h11==0.14.0
 httptools==0.6.4
 idna==3.10
