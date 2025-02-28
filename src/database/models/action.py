@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, DateTime
+from sqlalchemy import Column, ForeignKey, Integer, DateTime, String
 from src.database.models.base import Base
 
 
@@ -10,4 +10,6 @@ class Action(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     time = Column(DateTime)
+    user_id = ForeignKey("users.id")
+    action_type = Column(String, nullable=False)
     
