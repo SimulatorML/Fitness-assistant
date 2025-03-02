@@ -21,4 +21,5 @@ class BaseDTO(BaseModel):
         use_attribute_docstrings=True,
         cache_strings="all",
         alias_generator=to_camel,
+        populate_by_name=True
     )
