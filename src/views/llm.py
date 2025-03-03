@@ -1,7 +1,21 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter
+from pydantic import BaseModel
+from llm.workflow import process_fitness_query
+from src.dependencies import DBSession
 
 router = APIRouter(prefix="/llm", tags=["llm"])
 
-@router.post("/request/{query}")
-def test_llm(query: str):
-    return {"Status": "OK", "response": "llm response here"}
+
+class LLMRequest(BaseModel):
+    query: str
+    user_id: int 
+
+
+@router.post("/request")
+async def llm_request(data: LLMRequest, session: DBSession):
+    """
+    Endpoint to send a fitness-related query and user ID to the LLM.
+    """
+    response = await process_fitness_query(data.query, data.user_id, session)
+        
+    return {"Status": "OK", "response": response}
