@@ -9,7 +9,10 @@ __all__ = ["DBSession"]
 
 async def _create_database_session() -> AsyncGenerator[AsyncSession, None]:
     async with session_maker() as session:
-        yield session
+        try:
+            yield session
+        finally:
+            await session.close()
 
 
 DBSession = Annotated[AsyncSession, Depends(dependency=_create_database_session)]

@@ -1,3 +1,4 @@
+from datetime import datetime
 from src.schemas.base import BaseDTO
 from enum import Enum
 
@@ -23,7 +24,7 @@ class UserCreate(BaseDTO):
     name: str
     height: int
     weight: int
-    age: int
+    birth_date: datetime
     gender: str
     activity_level: ActivityLevel
     goal: Goal
@@ -32,7 +33,7 @@ class UserUpdate(BaseDTO):
     name: str | None = None
     height: int | None = None
     weight: int | None = None
-    age: int | None = None
+    birth_date: datetime | None = None
     gender: str | None = None
     activity_level: ActivityLevel | None = None
     goal: Goal | None = None
@@ -43,7 +44,9 @@ class UserDTO(BaseDTO):
     name: str
     height: int
     weight: int
-    age: int
+    birth_date: datetime
     gender: str
     activity_level: ActivityLevel
     goal: Goal
+    created_at: datetime
+    updated_at: datetime
