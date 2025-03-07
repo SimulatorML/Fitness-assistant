@@ -15,7 +15,7 @@ load_dotenv()
 storage = MemoryStorage()
 
 # Создаем объекты бота и диспетчера
-bot = Bot(os.getenv('TOKEN'))
+bot = Bot(os.getenv('TG_BOT_TOKEN'))
 dp = Dispatcher(storage=storage)
 
 # Создаем "базу данных" пользователей
