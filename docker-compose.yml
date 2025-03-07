@@ -23,6 +23,18 @@ services:
       - "8000:8000"
     depends_on:
       - db
+  
+  tgbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m bot
+    volumes:
+      - ./:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
 
 volumes: # удалить этот раздел если используется ./db_data
   pgdata:
