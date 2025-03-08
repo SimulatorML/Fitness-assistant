@@ -28,6 +28,8 @@ class UserCreate(BaseDTO):
     gender: str
     activity_level: ActivityLevel
     goal: Goal
+    health_restrictions: str | None = None
+    preferred_activities: str | None = None
 
 class UserUpdate(BaseDTO):
     name: str | None = None
@@ -37,6 +39,8 @@ class UserUpdate(BaseDTO):
     gender: str | None = None
     activity_level: ActivityLevel | None = None
     goal: Goal | None = None
+    health_restrictions: str | None = None
+    preferred_activities: str | None = None
 
 class UserDTO(BaseDTO):
     id: int
@@ -48,5 +52,7 @@ class UserDTO(BaseDTO):
     gender: str
     activity_level: ActivityLevel
     goal: Goal
+    health_restrictions: str | None = None
+    preferred_activities: str | None = None
     created_at: datetime
     updated_at: datetime
