@@ -1,40 +1,69 @@
+version: '3.8'
+
 services:
   db:
-    image: postgres:16
+    image: postgres:15-alpine
     environment:
-      POSTGRES_USER: fitness
-      POSTGRES_PASSWORD: fitness
-      POSTGRES_DB: fitness
-    ports:
-      - "5432:5432"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
-      - pgdata:/var/lib/postgresql/data # на unix системе использовать ./db_data вместо pgdata для локального хранения бд
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
 
-  app:
+  api:
     build:
       context: .
-      dockerfile: Dockerfile
-    command: python -m api
+      dockerfile: Dockerfile.app
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
-      - ./:/app
+      - .:/app  # Правильное монтирование кода
     env_file:
       - .env
     ports:
       - "8000:8000"
     depends_on:
-      - db
-  
-  tgbot:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://127.0.0.1:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  bot:
     build:
       context: .
-      dockerfile: Dockerfile
-    command: python -m bot
+      dockerfile: Dockerfile.bot
+    command: python -m bot  # Убрали `poetry run`, т.к. Poetry уже отключён в Dockerfile
     volumes:
-      - ./:/app
+      - .:/app
     env_file:
       - .env
     depends_on:
-      - db
+      api:
+        condition: service_started  # Бот стартует, когда API доступен
+    restart: unless-stopped
 
-volumes: # удалить этот раздел если используется ./db_data
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    command: alembic upgrade head  # Запускаем миграции перед API
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+
+volumes:
   pgdata:
