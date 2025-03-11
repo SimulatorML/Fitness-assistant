@@ -1,19 +1,8 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from src.config.settings import settings
-from typing import AsyncGenerator
+import os
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+import dotenv
 
-# Создаем движок для асинхронного взаимодействия с базой данных
-engine = create_async_engine(str(settings.DATABASE_URL), echo=False)
+dotenv.load_dotenv()
 
-
-# Создаем фабрику сессий
-SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
-
-# Функция для получения сессии БД
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    async with SessionLocal() as session:
-        yield session
-
-# Функция закрытия соединения с БД (при необходимости)
-async def close_db():
-    await engine.dispose()
+engine = create_async_engine(os.environ.get('DATABASE_URL'))
+session_maker = async_sessionmaker(autocommit=False, autoflush=False, bind=engine)
