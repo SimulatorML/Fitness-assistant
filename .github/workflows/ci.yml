@@ -36,12 +36,12 @@ jobs:
       - name: Install Dependencies
         run: poetry install
 
-      - name: Set Up Database URL
-        run: echo "DATABASE_URL=postgresql+asyncpg://testuser:testpassword@localhost:5432/testdb" >> $GITHUB_ENV
+      - name: Load environment variables from .env.example 
+        run: cp .env.example .env
 
       - name: Run FastAPI Tests
         run: poetry run python -m pytest tests/test_api.py
-        
+
       # - name: Run Telegram Bot Tests      # Add bot tests when are ready
       #  run: poetry run python -m pytest tests/test_bot.py
 
