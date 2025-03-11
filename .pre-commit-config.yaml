@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: pytest-check
+        name: Run Pytest Before Commit
+        entry: poetry run python -m pytest
+        language: system
+        pass_filenames: false
