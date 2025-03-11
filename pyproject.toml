@@ -36,6 +36,10 @@ aiogram = "^3.18.0"
 langchain-google-genai = "^2.0.11"
 
 
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.5"
+httpx = "^0.28.1"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
