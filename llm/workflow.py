@@ -1,10 +1,11 @@
 from langchain_core.prompts import ChatPromptTemplate
-from llm.models import llm
+from llm.models import get_llm
 from src.views.users import get_user
 from src.dependencies import DBSession
 from fastapi import HTTPException
 from collections import defaultdict
 
+llm = get_llm()
 
 SYSTEM_PROMPT = """
 You are an AI fitness assistant. Your job is to provide users with expert-level fitness, nutrition, and workout recommendations.
