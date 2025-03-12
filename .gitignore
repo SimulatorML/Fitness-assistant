@@ -3,6 +3,6 @@ __pycache__
 .idea/
 .DS_Store
 /db_data
-/tests
 /src/migrations/versions
 .pytest_cache
+.venv
