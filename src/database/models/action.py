@@ -12,4 +12,3 @@ class Action(Base):
     time = Column(DateTime)
     user_id = ForeignKey("users.id")
     action_type = Column(String, nullable=False)
-    
