@@ -17,6 +17,8 @@ def load_config():
 
 def get_llm():
     """Return the appropriate LLM based on the config."""
+    if not os.path.isfile(CONFIG_PATH):
+        raise FileNotFoundError(f"Config file llm_config.yaml not found at: {CONFIG_PATH}")
     config = load_config()
     provider = config.get("llm_provider", "openai")
 
@@ -42,4 +44,5 @@ def get_llm():
         )
 
     else:
+        return None
         raise ValueError(f"Unknown LLM provider: {provider}")

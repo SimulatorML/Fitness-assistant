@@ -19,11 +19,15 @@ class Goal(str, Enum):
     flexibility = "flexibility"  # Улучшение гибкости
     health = "health"  # Общее улучшение здоровья
 
+class InterfaceLanguage(str, Enum):
+    ENGLISH = "english"
+    RUSSIAN = "russian"
+
 class UserCreate(BaseDTO):
     telegram_id: int
     name: str
     height: int
-    weight: int
+    weight: float
     birth_date: datetime
     gender: str
     activity_level: ActivityLevel
@@ -34,7 +38,7 @@ class UserCreate(BaseDTO):
 class UserUpdate(BaseDTO):
     name: str | None = None
     height: int | None = None
-    weight: int | None = None
+    weight: float | None = None
     birth_date: datetime | None = None
     gender: str | None = None
     activity_level: ActivityLevel | None = None
@@ -47,7 +51,7 @@ class UserDTO(BaseDTO):
     telegram_id: int
     name: str
     height: int
-    weight: int
+    weight: float
     birth_date: datetime
     gender: str
     activity_level: ActivityLevel
