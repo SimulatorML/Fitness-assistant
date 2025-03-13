@@ -1,115 +1,111 @@
+from datetime import datetime
 from dotenv import load_dotenv
 import os
-from aiogram import Bot, Dispatcher, F
+from typing import Callable, Dict, Any, Awaitable
+from aiogram import Bot, Dispatcher, BaseMiddleware
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state, State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (CallbackQuery, InlineKeyboardButton,
-                           InlineKeyboardMarkup, Message, PhotoSize)
+                           InlineKeyboardMarkup, Message, TelegramObject)
+from sqlalchemy.orm import sessionmaker, Session
+from src.database.models import User, Action
+from src.schemas.action import ActionType
+from sqlalchemy import select
+from src.database.connection import session_maker
 
-# Загрузка переменных окружения
+
 load_dotenv()
 
-# Инициализируем хранилище (создаем экземпляр класса MemoryStorage)
-storage = MemoryStorage()
+class DBSessionMiddleware(BaseMiddleware):
+    def __init__(self, session_maker: sessionmaker) -> None:
+        super().__init__()
+        self.session_maker = session_maker
 
-# Создаем объекты бота и диспетчера
+    async def __call__(
+            self,
+            handler: Callable[[TelegramObject, Dict[str, Any]], Awaitable[Any]],
+            event: TelegramObject,
+            data: Dict[str, Any]
+    ) -> Any:
+        if "db_session" in data.get("handler").params:
+            async with self.session_maker() as session:
+                data["db_session"] = session
+                return await handler(event, data)
+        return await handler(event, data)
+
+
 bot = Bot(os.getenv('TELEGRAM_BOT_TOKEN'))
+storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
+db_session_middleware = DBSessionMiddleware(session_maker=session_maker)
+dp.message.middleware(db_session_middleware)
+dp.callback_query.middleware(db_session_middleware)
 
-# Создаем "базу данных" пользователей
-user_dict: dict[int, dict[str, str | int | bool]] = {}
 
-
-# Cоздаем класс, наследуемый от StatesGroup, для группы состояний нашей FSM
 class FSMFillForm(StatesGroup):
-    # Создаем экземпляры класса State, последовательно
-    # перечисляя возможные состояния, в которых будет находиться
-    # бот в разные моменты взаимодействия с пользователем
-    fill_name = State()        # Состояние ожидания ввода имени
-    fill_age = State()         # Состояние ожидания ввода возраста
-    fill_gender = State()      # Состояние ожидания выбора пола
-    upload_photo = State()     # Состояние ожидания загрузки фото
-    fill_education = State()   # Состояние ожидания выбора образования
-    fill_wish_news = State()   # Состояние ожидания выбора получать ли новости
+    name = State()
+    birth_date = State()
+    gender = State()
+    height = State()
+    weight = State()
+    activity_level = State()
+    goal = State()
+    health_restrictions = State()
+    preferred_activities = State()
 
 
 # Этот хэндлер будет срабатывать на команду /start вне состояний
-# и предлагать перейти к заполнению анкеты, отправив команду /fillform
+# переводит бота в состояние ожидания ввода имени если новый пользователь
 @dp.message(CommandStart(), StateFilter(default_state))
-async def process_start_command(message: Message):
-    await message.answer(
-        text='Этот бот помогает достигать лучших '
-             'результатов в физической активности\n\n'
-             'Чтобы перейти к заполнению анкеты - '
-             'отправьте команду /fillform'
-    )
+async def process_start_command(message: Message, state: FSMContext, db_session: Session):
+    telegram_id = message.from_user.id
+    query = select(User).where(User.telegram_id == telegram_id)
+    result = await db_session.execute(query)
+    user = result.scalar_one_or_none()
+    if not user:
+        await message.answer(
+            text='Добро пожаловать! Этот бот помогает достигать лучших '
+                'результатов в физической активности с помощью ИИ.\n\n\n'
+                'Для продолжения необходимо заполнить небольшую анкету о себе!\n'
+                'Пожалуйста, введите Ваше имя:'
+        )
+        await state.set_state(FSMFillForm.name)
+    else:
+        await message.answer(
+            text=f'С возвращением, {user.name}! Чем хотите заняться?'
+        )
 
 
-# Этот хэндлер будет срабатывать на команду "/cancel" в состоянии
-# по умолчанию и сообщать, что эта команда работает внутри машины состояний
-@dp.message(Command(commands='cancel'), StateFilter(default_state))
-async def process_cancel_command(message: Message):
-    await message.answer(
-        text='Отменять нечего. Вы вне машины состояний\n\n'
-             'Чтобы перейти к заполнению анкеты - '
-             'отправьте команду /fillform'
-    )
-
-
-# Этот хэндлер будет срабатывать на команду "/cancel" в любых состояниях,
-# кроме состояния по умолчанию, и отключать машину состояний
-@dp.message(Command(commands='cancel'), ~StateFilter(default_state))
-async def process_cancel_command_state(message: Message, state: FSMContext):
-    await message.answer(
-        text='Вы вышли из машины состояний\n\n'
-             'Чтобы снова перейти к заполнению анкеты - '
-             'отправьте команду /fillform'
-    )
-    # Сбрасываем состояние и очищаем данные, полученные внутри состояний
-    await state.clear()
-
-
-# Этот хэндлер будет срабатывать на команду /fillform
-# и переводить бота в состояние ожидания ввода имени
-@dp.message(Command(commands='fillform'), StateFilter(default_state))
-async def process_fillform_command(message: Message, state: FSMContext):
-    await message.answer(text='Пожалуйста, введите ваше имя')
-    # Устанавливаем состояние ожидания ввода имени
-    await state.set_state(FSMFillForm.fill_name)
-
-
-# Этот хэндлер будет срабатывать, если введено корректное имя
-# и переводить в состояние ожидания ввода возраста
-@dp.message(StateFilter(FSMFillForm.fill_name), F.text.isalpha())
+# переводит в состояние ожидания ввода даты рождения
+@dp.message(StateFilter(FSMFillForm.name))
 async def process_name_sent(message: Message, state: FSMContext):
-    # Cохраняем введенное имя в хранилище по ключу "name"
     await state.update_data(name=message.text)
-    await message.answer(text='Спасибо!\n\nА теперь введите ваш возраст')
-    # Устанавливаем состояние ожидания ввода возраста
-    await state.set_state(FSMFillForm.fill_age)
+    await message.answer(text='Спасибо!\n\nА теперь введите Вашу дату рождения в формате ГГГГ-ММ-ДД:')
+    await state.set_state(FSMFillForm.birth_date)
 
 
-# Этот хэндлер будет срабатывать, если во время ввода имени
-# будет введено что-то некорректное
-@dp.message(StateFilter(FSMFillForm.fill_name))
-async def warning_not_name(message: Message):
-    await message.answer(
-        text='То, что вы отправили не похоже на имя\n\n'
-             'Пожалуйста, введите ваше имя\n\n'
-             'Если вы хотите прервать заполнение анкеты - '
-             'отправьте команду /cancel'
-    )
+def calculate_age(birth_date: datetime) -> int:
+    today = datetime.now().date()
+    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+    return age
 
+# переводит в состояние выбора пола
+@dp.message(StateFilter(FSMFillForm.birth_date))
+async def process_age(message: Message, state: FSMContext):
+    try:
+        birth_date = datetime.strptime(message.text, "%Y-%m-%d")
+    except ValueError:
+        await message.answer("Некорректный формат даты. Введите в формате ГГГГ-ММ-ДД:")
+        return
 
-# Этот хэндлер будет срабатывать, если введен корректный возраст
-# и переводить в состояние выбора пола
-@dp.message(StateFilter(FSMFillForm.fill_age),
-            lambda x: x.text.isdigit() and 4 <= int(x.text) <= 120)
-async def process_age_sent(message: Message, state: FSMContext):
-    # Cохраняем возраст в хранилище по ключу "age"
-    await state.update_data(age=message.text)
+    age = calculate_age(birth_date)
+    if not (16 <= age <= 90):
+        await message.answer("Возраст должен быть от 16 до 90 лет. Пожалуйста, проверьте дату рождения и введите еще раз в формате ГГГГ-ММ-ДД:")
+        return
+    await state.update_data(birth_date=birth_date)
+
     # Создаем объекты инлайн-кнопок
     male_button = InlineKeyboardButton(
         text='Мужской ♂',
@@ -119,7 +115,6 @@ async def process_age_sent(message: Message, state: FSMContext):
         text='Женский ♀',
         callback_data='female'
     )
-    
     # Добавляем кнопки в клавиатуру (две в одном ряду и одну в другом)
     keyboard: list[list[InlineKeyboardButton]] = [
         [male_button, female_button]
@@ -128,213 +123,156 @@ async def process_age_sent(message: Message, state: FSMContext):
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     # Отправляем пользователю сообщение с клавиатурой
     await message.answer(
-        text='Спасибо!\n\nУкажите ваш пол',
+        text='Спасибо!\n\nУкажите Ваш пол',
         reply_markup=markup
     )
-    # Устанавливаем состояние ожидания выбора пола
-    await state.set_state(FSMFillForm.fill_gender)
+    await state.set_state(FSMFillForm.gender)
 
 
-# Этот хэндлер будет срабатывать, если во время ввода возраста
-# будет введено что-то некорректное
-@dp.message(StateFilter(FSMFillForm.fill_age))
-async def warning_not_age(message: Message):
-    await message.answer(
-        text='Возраст должен быть целым числом от 4 до 120\n\n'
-             'Попробуйте еще раз\n\nЕсли вы хотите прервать '
-             'заполнение анкеты - отправьте команду /cancel'
-    )
-
-
-# Этот хэндлер будет срабатывать на нажатие кнопки при
-# выборе пола и переводить в состояние отправки фото
-@dp.callback_query(StateFilter(FSMFillForm.fill_gender),
-                   F.data.in_(['male', 'female' ]))
-async def process_gender_press(callback: CallbackQuery, state: FSMContext):
-    # Cохраняем пол (callback.data нажатой кнопки) в хранилище,
-    # по ключу "gender"
+# переводит в состояние ввода роста
+@dp.callback_query(StateFilter(FSMFillForm.gender))
+async def process_gender(callback: CallbackQuery, state: FSMContext):
     await state.update_data(gender=callback.data)
-    # Удаляем сообщение с кнопками, потому что следующий этап - загрузка фото
-    # чтобы у пользователя не было желания тыкать кнопки
-    await callback.message.delete()
+    # await callback.message.delete() # нужно ли нам удалять сообщение с кнопками????
     await callback.message.answer(
-        text='Спасибо! А теперь загрузите, пожалуйста, ваше фото'
+        text='Спасибо! А теперь введите Ваш рост:'
     )
-    # Устанавливаем состояние ожидания загрузки фото
-    await state.set_state(FSMFillForm.upload_photo)
+    # Устанавливаем состояние ожидания ввода роста
+    await state.set_state(FSMFillForm.height)
 
 
-# Этот хэндлер будет срабатывать, если во время выбора пола
-# будет введено/отправлено что-то некорректное
-@dp.message(StateFilter(FSMFillForm.fill_gender))
-async def warning_not_gender(message: Message):
-    await message.answer(
-        text='Пожалуйста, пользуйтесь кнопками '
-             'при выборе пола\n\nЕсли вы хотите прервать '
-             'заполнение анкеты - отправьте команду /cancel'
-    )
+# Обработчик для ввода роста с проверкой диапазона
+@dp.message(FSMFillForm.height)
+async def process_height(message: Message, state: FSMContext):
+    if not message.text.isdigit():
+        await message.answer("Пожалуйста, введите число для роста.")
+        return
+    height = int(message.text)
+    if not (100 <= height <= 250):
+        await message.answer("Рост должен быть в диапазоне от 100 до 250 см. Попробуйте еще раз:")
+        return
+    await state.update_data(height=height)
+    await message.answer("Теперь введите ваш вес (в кг):")
+    await state.set_state(FSMFillForm.weight)
 
 
-# Этот хэндлер будет срабатывать, если отправлено фото
-# и переводить в состояние выбора образования
-@dp.message(StateFilter(FSMFillForm.upload_photo),
-            F.photo[-1].as_('largest_photo'))
-async def process_photo_sent(message: Message,
-                             state: FSMContext,
-                             largest_photo: PhotoSize):
-    # Cохраняем данные фото (file_unique_id и file_id) в хранилище
-    # по ключам "photo_unique_id" и "photo_id"
-    await state.update_data(
-        photo_unique_id=largest_photo.file_unique_id,
-        photo_id=largest_photo.file_id
+# Обработчик для ввода веса с проверкой диапазона
+@dp.message(FSMFillForm.weight)
+async def process_weight(message: Message, state: FSMContext):
+    try:
+        weight = message.text.replace(',', '.')
+        weight = float(weight)
+        if not (30 <= weight <= 160):
+            raise ValueError
+    except ValueError:
+        await message.answer("Вес должен быть в диапазоне от 30 до 160 кг. Например: 56.7, 89,5.\nПопробуйте еще раз:")
+        return
+    await state.update_data(weight=round(weight, 1))
+
+    # Create ActivityLevel buttons (src/schemas/user.py)
+    sedentary_button = InlineKeyboardButton(
+        text='Малоподвижный образ жизни',
+        callback_data='sedentary'
     )
-    # Создаем объекты инлайн-кнопок
-    secondary_button = InlineKeyboardButton(
-        text='Среднее',
-        callback_data='secondary'
+    light_button = InlineKeyboardButton(
+        text='Лёгкая активность (какая-либо активность 1-2 раза в неделю, прогулки)',
+        callback_data='light'
     )
-    higher_button = InlineKeyboardButton(
-        text='Высшее',
-        callback_data='higher'
+    moderate_button = InlineKeyboardButton(
+        text='Умеренная активность (тренировки 3-4 раза в неделю)',
+        callback_data='moderate'
     )
-    no_edu_button = InlineKeyboardButton(
-        text='🤷 Нету',
-        callback_data='no_edu'
+    high_button = InlineKeyboardButton(
+            text='Высокая активность (интенсивные тренировки 5+ раз в неделю)',
+            callback_data='high'
     )
-    # Добавляем кнопки в клавиатуру (две в одном ряду и одну в другом)
+    athlete_button = InlineKeyboardButton(
+            text='Профессиональный уровень (спортсмен, тренировки 2 раза в день)',
+            callback_data='athlete'
+    )
     keyboard: list[list[InlineKeyboardButton]] = [
-        [secondary_button, higher_button],
-        [no_edu_button]
+        [sedentary_button, light_button],
+        [moderate_button, high_button],
+        [athlete_button]
     ]
-    # Создаем объект инлайн-клавиатуры
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-    # Отправляем пользователю сообщение с клавиатурой
-    await message.answer(
-        text='Спасибо!\n\nУкажите ваше образование',
-        reply_markup=markup
+    await message.answer("Выберите Ваш уровень активности", reply_markup=markup)
+    await state.set_state(FSMFillForm.activity_level)
+
+
+@dp.callback_query(FSMFillForm.activity_level)
+async def process_activity_level(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(activity_level=callback.data)
+
+    # Create Goal buttons (src/schemas/user.py)
+    fat_loss_button = InlineKeyboardButton(
+        text='Сжигание жира',
+        callback_data='fat_loss'
     )
-    # Устанавливаем состояние ожидания выбора образования
-    await state.set_state(FSMFillForm.fill_education)
-
-
-# Этот хэндлер будет срабатывать, если во время отправки фото
-# будет введено/отправлено что-то некорректное
-@dp.message(StateFilter(FSMFillForm.upload_photo))
-async def warning_not_photo(message: Message):
-    await message.answer(
-        text='Пожалуйста, на этом шаге отправьте '
-             'ваше фото\n\nЕсли вы хотите прервать '
-             'заполнение анкеты - отправьте команду /cancel'
+    muscle_gain_button = InlineKeyboardButton(
+        text='Набор мышечной массы',
+        callback_data='muscle_gain'
     )
-
-
-# Этот хэндлер будет срабатывать, если выбрано образование
-# и переводить в состояние согласия получать новости
-@dp.callback_query(StateFilter(FSMFillForm.fill_education),
-                   F.data.in_(['secondary', 'higher', 'no_edu']))
-async def process_education_press(callback: CallbackQuery, state: FSMContext):
-    # Cохраняем данные об образовании по ключу "education"
-    await state.update_data(education=callback.data)
-    # Создаем объекты инлайн-кнопок
-    yes_news_button = InlineKeyboardButton(
-        text='Да',
-        callback_data='yes_news'
+    maintenance_button = InlineKeyboardButton(
+        text='Поддержание формы',
+        callback_data='maintenance'
     )
-    no_news_button = InlineKeyboardButton(
-        text='Нет, спасибо',
-        callback_data='no_news')
-    # Добавляем кнопки в клавиатуру в один ряд
+    endurance_button = InlineKeyboardButton(
+            text='Развитие выносливости',
+            callback_data='endurance'
+    )
+    strength_button = InlineKeyboardButton(
+            text='Увеличение силы',
+            callback_data='strength'
+    )
+    flexibility_button = InlineKeyboardButton(
+            text='Улучшение гибкости',
+            callback_data='flexibility'
+    )
+    health_button = InlineKeyboardButton(
+            text='Общее улучшение здоровья',
+            callback_data='health'
+    )
     keyboard: list[list[InlineKeyboardButton]] = [
-        [yes_news_button, no_news_button]
+        [fat_loss_button, muscle_gain_button],
+        [maintenance_button, endurance_button],
+        [strength_button, flexibility_button],
+        [health_button]
     ]
-    # Создаем объект инлайн-клавиатуры
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-    # Редактируем предыдущее сообщение с кнопками, отправляя
-    # новый текст и новую клавиатуру
-    await callback.message.edit_text(
-        text='Спасибо!\n\nОстался последний шаг.\n'
-             'Хотели бы вы получать новости?',
-        reply_markup=markup
-    )
-    # Устанавливаем состояние ожидания выбора получать новости или нет
-    await state.set_state(FSMFillForm.fill_wish_news)
+    await callback.message.answer("Какая Ваша цель?", reply_markup=markup)
+    await state.set_state(FSMFillForm.goal)
 
 
-# Этот хэндлер будет срабатывать, если во время выбора образования
-# будет введено/отправлено что-то некорректное
-@dp.message(StateFilter(FSMFillForm.fill_education))
-async def warning_not_education(message: Message):
-    await message.answer(
-        text='Пожалуйста, пользуйтесь кнопками при выборе образования\n\n'
-             'Если вы хотите прервать заполнение анкеты - отправьте '
-             'команду /cancel'
-    )
+@dp.callback_query(FSMFillForm.goal)
+async def process_activity_level(callback: CallbackQuery, state: FSMContext):
+    await state.update_data(goal=callback.data)
+    await callback.message.answer("Напишите в вольной форме, есть ли у Вас какие-либо заболевания, травмы и т.д.:")
+    await state.set_state(FSMFillForm.health_restrictions)
 
 
-# Этот хэндлер будет срабатывать на выбор получать или
-# не получать новости и выводить из машины состояний
-@dp.callback_query(StateFilter(FSMFillForm.fill_wish_news),
-                   F.data.in_(['yes_news', 'no_news']))
-async def process_wish_news_press(callback: CallbackQuery, state: FSMContext):
-    # Cохраняем данные о получении новостей по ключу "wish_news"
-    await state.update_data(wish_news=callback.data == 'yes_news')
-    # Добавляем в "базу данных" анкету пользователя
-    # по ключу id пользователя
-    user_dict[callback.from_user.id] = await state.get_data()
-    # Завершаем машину состояний
+@dp.message(FSMFillForm.health_restrictions)
+async def process_activity_level(message: Message, state: FSMContext):
+    await state.update_data(health_restrictions=message.text)
+    await message.answer("Есть ли у Вас какие-либо предпочтения по активностям (например каждую неделю плаваете, ходите в спортзал и т.д.)?")
+    await state.set_state(FSMFillForm.preferred_activities)
+
+
+@dp.message(FSMFillForm.preferred_activities)
+async def process_activity_level(message: Message, state: FSMContext, db_session: Session):
+    await state.update_data(preferred_activities=message.text)
+    data = await state.get_data()
+    data["telegram_id"] = message.from_user.id
+    new_user = User(**data)
+    db_session.add(new_user)
+    await db_session.flush()
+    await db_session.refresh(new_user)
+    action = Action(time=new_user.created_at, user_id=new_user.id, action_type=ActionType.REGISTRATION)
+    db_session.add(action)
+    await db_session.commit()
+    await message.answer("Отлично! Теперь, мы можем сможем давать Вам персонализированные рекомендации!\nЕсли что-то поменяется (вес, цели) - Вы можете изменить это в любое время")
     await state.clear()
-    # Отправляем в чат сообщение о выходе из машины состояний
-    await callback.message.edit_text(
-        text='Спасибо! Ваши данные сохранены!\n\n'
-             'Вы вышли из машины состояний'
-    )
-    # Отправляем в чат сообщение с предложением посмотреть свою анкету
-    await callback.message.answer(
-        text='Чтобы посмотреть данные вашей '
-             'анкеты - отправьте команду /showdata'
-    )
 
 
-# Этот хэндлер будет срабатывать, если во время согласия на получение
-# новостей будет введено/отправлено что-то некорректное
-@dp.message(StateFilter(FSMFillForm.fill_wish_news))
-async def warning_not_wish_news(message: Message):
-    await message.answer(
-        text='Пожалуйста, воспользуйтесь кнопками!\n\n'
-             'Если вы хотите прервать заполнение анкеты - '
-             'отправьте команду /cancel'
-    )
-
-
-# Этот хэндлер будет срабатывать на отправку команды /showdata
-# и отправлять в чат данные анкеты, либо сообщение об отсутствии данных
-@dp.message(Command(commands='showdata'), StateFilter(default_state))
-async def process_showdata_command(message: Message):
-    # Отправляем пользователю анкету, если она есть в "базе данных"
-    if message.from_user.id in user_dict:
-        await message.answer_photo(
-            photo=user_dict[message.from_user.id]['photo_id'],
-            caption=f'Имя: {user_dict[message.from_user.id]["name"]}\n'
-                    f'Возраст: {user_dict[message.from_user.id]["age"]}\n'
-                    f'Пол: {user_dict[message.from_user.id]["gender"]}\n'
-                    f'Образование: {user_dict[message.from_user.id]["education"]}\n'
-                    f'Получать новости: {user_dict[message.from_user.id]["wish_news"]}'
-        )
-    else:
-        # Если анкеты пользователя в базе нет - предлагаем заполнить
-        await message.answer(
-            text='Вы еще не заполняли анкету. Чтобы приступить - '
-            'отправьте команду /fillform'
-        )
-
-
-# Этот хэндлер будет срабатывать на любые сообщения, кроме тех
-# для которых есть отдельные хэндлеры, вне состояний
-@dp.message(StateFilter(default_state))
-async def send_echo(message: Message):
-    await message.reply(text='Извините, моя твоя не понимать')
-
-
-# Запускаем поллинг
 if __name__ == '__main__':
     dp.run_polling(bot)
