@@ -1,5 +1,6 @@
 from sqlalchemy import Column, ForeignKey, Integer, DateTime, String
 from src.database.models.base import Base
+from sqlalchemy.orm import relationship
 
 
 __all__ = ["Action"]
@@ -10,5 +11,5 @@ class Action(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     time = Column(DateTime)
-    user_id = ForeignKey("users.id")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     action_type = Column(String, nullable=False)
