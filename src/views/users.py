@@ -39,6 +39,9 @@ async def create_user(user: UserCreate, db_session: DBSession):
         user (UserCreate): The user object containing the details of the new user.
         db_session (DBSession): The database session.
 
+    Returns:
+        UserDTO: The user object containing the details of the user.
+
     Raises:
         HTTPException: If there is an error creating the user.
     """
@@ -63,6 +66,9 @@ async def update_user(user_id: int, user_update: UserUpdate, db_session: DBSessi
         user_id (int): The Telegram ID of the user to update.
         user (UserUpdate): The user object containing the details of the updated user.
         db_session (DBSession): The database session.
+
+    Returns:
+        UserDTO: The user object containing the details of the user.
         
     Raises:
         HTTPException: If the user is not found.
