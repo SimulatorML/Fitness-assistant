@@ -7,6 +7,7 @@ __all__ = ["Action"]
 
 
 class Action(Base):
+    """Schema for logging user actions in telegram bot."""
     __tablename__ = "actions"
 
     id = Column(Integer, primary_key=True, index=True)

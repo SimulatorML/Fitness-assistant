@@ -144,7 +144,7 @@ async def process_weight(message: Message, state: FSMContext):
         callback_data='sedentary'
     )
     light_button = InlineKeyboardButton(
-        text='Лёгкая активность (какая-либо активность 1-2 раза в неделю, прогулки)',
+        text='Лёгкая активность (1-2 раза в неделю, прогулки)',
         callback_data='light'
     )
     moderate_button = InlineKeyboardButton(
@@ -152,7 +152,7 @@ async def process_weight(message: Message, state: FSMContext):
         callback_data='moderate'
     )
     high_button = InlineKeyboardButton(
-            text='Высокая активность (интенсивные тренировки 5+ раз в неделю)',
+            text='Высокая активность (тренировки 5+ раз в неделю)',
             callback_data='high'
     )
     athlete_button = InlineKeyboardButton(
@@ -160,8 +160,10 @@ async def process_weight(message: Message, state: FSMContext):
             callback_data='athlete'
     )
     keyboard: list[list[InlineKeyboardButton]] = [
-        [sedentary_button, light_button],
-        [moderate_button, high_button],
+        [sedentary_button],
+        [light_button],
+        [moderate_button],
+        [high_button],
         [athlete_button]
     ]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
@@ -208,9 +210,12 @@ async def process_activity_level(callback: CallbackQuery, state: FSMContext):
             callback_data='health'
     )
     keyboard: list[list[InlineKeyboardButton]] = [
-        [fat_loss_button, muscle_gain_button],
-        [maintenance_button, endurance_button],
-        [strength_button, flexibility_button],
+        [fat_loss_button],
+        [muscle_gain_button],
+        [maintenance_button],
+        [endurance_button],
+        [strength_button],
+        [flexibility_button],
         [health_button]
     ]
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
