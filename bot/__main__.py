@@ -86,16 +86,28 @@ async def process_start_command(message: Message, state: FSMContext, db_session:
         )
 
 @dp.message(Command("updateprofile"))
-async def update_profile(message: Message, state: FSMContext):
+async def update_profile(message: Message):
     await message.answer("Профиль обновлен!")
 
+@dp.message(Command("profileinfo"))
+async def get_profile_info(message: Message):
+    await message.answer("Информация о профиле")
+
+@dp.message(Command("getrecommendation"))
+async def process_get_recommendations_command(message: Message):
+    await message.answer("Рекомендация")
+
+@dp.message(Command("addactivity"))
+async def process_add_activity_command(message: Message):
+    await message.answer("Активность добавлена!")
+    
 @dp.message(Command("help"))
 async def process_help_command(message: Message):
     await message.answer("Помощь")
 
-@dp.message(Command("getrecommendations"))
-async def process_get_recommendations_command(message: Message):
-    await message.answer("Рекомендации")
+@dp.message(Command("deleteprofile")) # For testing, maybe will be removed
+async def process_delete_profile_command(message: Message):
+    await message.answer("Профиль удален!")
 
 
 register_onboarding_handlers(dp)

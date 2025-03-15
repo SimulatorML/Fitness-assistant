@@ -7,3 +7,4 @@ __pycache__/
 .pytest_cache
 .venv/
 /tests/test_users.py
+test.ipynb
