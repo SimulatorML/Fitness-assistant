@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from src.database.models import User, Action
 from src.schemas.action import ActionType
 from sqlalchemy.orm import Session
+from src.utils import calculate_age
 
 
 class FSMFillForm(StatesGroup):
@@ -32,18 +33,6 @@ async def process_name_sent(message: Message, state: FSMContext):
     await message.answer(text='Спасибо!\n\nА теперь введите Вашу дату рождения в формате ГГГГ-ММ-ДД:')
     await state.set_state(FSMFillForm.birth_date)
 
-def calculate_age(birth_date: datetime) -> int:
-    """Calculate the age based on the birth date.
-    
-    Args:
-        birth_date (datetime): The birth date of the user.
-    
-    Returns:
-        int: The age of the user.
-    """
-    today = datetime.now().date()
-    age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
-    return age
 
 async def process_birth_date(message: Message, state: FSMContext):
     """

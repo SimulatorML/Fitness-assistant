@@ -9,9 +9,8 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, TelegramObject
 from sqlalchemy.orm import sessionmaker, Session
 from bot.onboarding import register_onboarding_handlers
-from src.database.models import User
-from sqlalchemy import select
 from src.database.connection import session_maker
+from src.utils import get_user
 
 
 load_dotenv()
@@ -60,7 +59,7 @@ class FSMFillForm(StatesGroup):
 @dp.message(CommandStart(), StateFilter('*'))
 async def process_start_command(message: Message, state: FSMContext, db_session: Session):
     """
-    Handle the start command and start the onboarding process if user not found in database.
+    Handle the "start" command and start the onboarding process if user not found in database.
     
     Args:
         message (Message): The message sent by the user.
@@ -68,10 +67,7 @@ async def process_start_command(message: Message, state: FSMContext, db_session:
         db_session (Session): The database session.
     """
     await state.clear()
-    telegram_id = message.from_user.id
-    query = select(User).where(User.telegram_id == telegram_id)
-    result = await db_session.execute(query)
-    user = result.scalar_one_or_none()
+    user = await get_user(message.from_user.id, db_session)
     if not user:
         await message.answer(
             text='Добро пожаловать! Этот бот помогает достигать лучших '
@@ -85,28 +81,62 @@ async def process_start_command(message: Message, state: FSMContext, db_session:
             text=f'С возвращением, {user.name}! Чем хотите заняться?'
         )
 
+
 @dp.message(Command("updateprofile"))
-async def update_profile(message: Message):
+async def update_profile(message: Message, db_session: Session):
+    """
+    Handle the "updateprofile" command and update the user profile.
+    
+    Args:
+        message (Message): The message sent by the user.
+        db_session (Session): The database session.
+    """
+    user = await get_user(message.from_user.id, db_session)
     await message.answer("Профиль обновлен!")
 
+
 @dp.message(Command("profileinfo"))
-async def get_profile_info(message: Message):
+async def show_profile_info(message: Message, db_session: Session):
+    """
+    Handle the "profileinfo" command and show the user profile info.
+    
+    Args:
+        message (Message): The message sent by the user.
+        db_session (Session): The database session.
+    """
+    user = await get_user(message.from_user.id, db_session)
     await message.answer("Информация о профиле")
 
+
 @dp.message(Command("getrecommendation"))
-async def process_get_recommendations_command(message: Message):
+async def process_get_recommendations_command(message: Message, db_session: Session):
+    user = await get_user(message.from_user.id, db_session)
     await message.answer("Рекомендация")
 
+
 @dp.message(Command("addactivity"))
-async def process_add_activity_command(message: Message):
+async def process_add_activity_command(message: Message, db_session: Session):
+    """
+    Handle the "addactivity" command and add the user's activity to the profile.
+    
+    Args:
+        message (Message): The message sent by the user.
+        db_session (Session): The database session.
+    """
+    user = await get_user(message.from_user.id, db_session)
     await message.answer("Активность добавлена!")
+
     
 @dp.message(Command("help"))
 async def process_help_command(message: Message):
     await message.answer("Помощь")
 
+
 @dp.message(Command("deleteprofile")) # For testing, maybe will be removed
-async def process_delete_profile_command(message: Message):
+async def process_delete_profile_command(message: Message, db_session: Session):
+    user = await get_user(message.from_user.id, db_session)
+    await db_session.delete(user)
+    await db_session.commit()
     await message.answer("Профиль удален!")
 
 
