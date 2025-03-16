@@ -11,6 +11,5 @@ class Activity(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     date = Column(DateTime, nullable=False)
-    user = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     activity_type = Column(String, nullable=False)
-    

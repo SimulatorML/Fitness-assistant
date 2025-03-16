@@ -1,6 +1,6 @@
 from langchain_core.prompts import ChatPromptTemplate
 from llm.models import get_llm
-from src.views.users import get_user
+from src.utils import get_user
 from src.dependencies import DBSession
 from fastapi import HTTPException
 from collections import defaultdict
@@ -13,18 +13,18 @@ You should personalize responses based on the user's fitness level, goals, and o
 Be precise, encouraging, and professional. Keep answers concise but informative.
 """
 
-# In-memory storage for chat history: {user_id: [(user_input, ai_response)]} 
+# In-memory storage for chat history: {telegram_id: [(user_input, ai_response)]} 
 # We should use a DB for production
 chat_history_store = defaultdict(list)  
 
 
-async def get_user_info_dict(user_id: int, session: DBSession) -> dict:
+async def get_user_info_dict(telegram_id: int, session: DBSession) -> dict:
     """
-    Retrieves user details from the database based on user_id.
+    Retrieves user details from the database based on telegram_id.
     Uses mock user data if database is unavailable.
     """
     try:
-        user_info = await get_user(user_id, session)
+        user_info = await get_user(telegram_id, session)
         if not user_info:
             raise HTTPException(status_code=404, detail="User not found")
         user_info_dict = user_info.model_dump()
@@ -32,7 +32,7 @@ async def get_user_info_dict(user_id: int, session: DBSession) -> dict:
     # use mock data (remove in future)
     except Exception:
         user_info_dict = {
-            "id": user_id,
+            "id": telegram_id,
             "name": "Test User",
             "age": 30,
             "activity_level": "moderate",
