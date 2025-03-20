@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Float, Integer, String, func
+from sqlalchemy import Column, Date, DateTime, Float, Integer, String, func
 from src.database.models.base import Base
 
 
@@ -14,7 +14,7 @@ class User(Base):
     name = Column(String, nullable=False)
     height = Column(Integer, nullable=False)
     weight = Column(Float, nullable=False)
-    birth_date = Column(DateTime(timezone=True), nullable=False)
+    birth_date = Column(Date, nullable=False)
     gender = Column(String, nullable=False)
     activity_level = Column(String, nullable=False)
     goal = Column(String, nullable=False)

@@ -46,7 +46,7 @@ async def process_fitness_query(
     user_query: str, user_id: int, session: DBSession
 ) -> str:
     """
-    Processes a user query with user info and returns an AI-generated response.
+    Process a user's query using their information and return an AI-generated response.
 
     Args:
         user_query (str): The question asked by the user.

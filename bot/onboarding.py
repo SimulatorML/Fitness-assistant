@@ -54,7 +54,7 @@ async def process_birth_date(message: Message, state: FSMContext):
         return
     await state.update_data(birth_date=birth_date)
 
-    # Создаем объекты инлайн-кнопок
+    # Create inline keyboard buttons
     male_button = InlineKeyboardButton(
         text='Мужской ♂',
         callback_data='male'
@@ -63,13 +63,13 @@ async def process_birth_date(message: Message, state: FSMContext):
         text='Женский ♀',
         callback_data='female'
     )
-    # Добавляем кнопки в клавиатуру (две в одном ряду и одну в другом)
+    # Add buttons to keyboard
     keyboard: list[list[InlineKeyboardButton]] = [
         [male_button, female_button]
         ]
-    # Создаем объект инлайн-клавиатуры
+    # Create inline keyboard object
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
-    # Отправляем пользователю сообщение с клавиатурой
+    # Send message with inline keyboard
     await message.answer(
         text='Спасибо!\n\nУкажите Ваш пол',
         reply_markup=markup
@@ -220,7 +220,7 @@ async def process_goal(callback: CallbackQuery, state: FSMContext):
         state (FSMContext): The state machine context.
     """
     await state.update_data(goal=callback.data)
-    await callback.message.answer("Напишите в вольной форме, есть ли у Вас какие-либо заболевания, травмы и т.д.:")
+    await callback.message.answer("Напишите в вольной форме, есть ли у Вас какие-либо заболевания, травмы и т.д. (если нет - поставьте прочерк \"-\"):")
     await state.set_state(FSMFillForm.health_restrictions)
 
 async def process_health_restrictions(message: Message, state: FSMContext):
@@ -232,7 +232,7 @@ async def process_health_restrictions(message: Message, state: FSMContext):
         state (FSMContext): The state machine context.
     """
     await state.update_data(health_restrictions=message.text)
-    await message.answer("Есть ли у Вас какие-либо предпочтения по активностям (например каждую неделю плаваете, ходите в спортзал и т.д.)?")
+    await message.answer("Есть ли у Вас какие-либо предпочтения по активностям (например каждую неделю плаваете, ходите в спортзал и т.д.)? Если нет - поставьте прочерк \"-\"")
     await state.set_state(FSMFillForm.preferred_activities)
 
 async def process_preferred_activities(message: Message, state: FSMContext, db_session: Session):
@@ -259,7 +259,7 @@ async def process_preferred_activities(message: Message, state: FSMContext, db_s
 
 def register_onboarding_handlers(dp: Dispatcher):
     """
-    Register onboarding handlers
+    Register onboarding handlers for telegram bot.
     
     Args:
         dp: Dispatcher

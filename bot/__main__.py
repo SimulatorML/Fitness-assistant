@@ -68,7 +68,12 @@ async def process_start_command(message: Message, state: FSMContext, db_session:
     """
     await state.clear()
     user = await get_user(message.from_user.id, db_session)
-    if not user:
+    if user:
+        # TODO: Rework welcome message
+        await message.answer(
+            text=f'С возвращением, {user.name}! Чем хотите заняться?'
+        )
+    else:
         await message.answer(
             text='Добро пожаловать! Этот бот помогает достигать лучших '
                 'результатов в физической активности с помощью ИИ.\n\n\n'
@@ -76,10 +81,6 @@ async def process_start_command(message: Message, state: FSMContext, db_session:
                 'Пожалуйста, введите Ваше имя:'
         )
         await state.set_state(FSMFillForm.name)
-    else:
-        await message.answer(
-            text=f'С возвращением, {user.name}! Чем хотите заняться?'
-        )
 
 
 @dp.message(Command("updateprofile"))
@@ -92,7 +93,11 @@ async def update_profile(message: Message, db_session: Session):
         db_session (Session): The database session.
     """
     user = await get_user(message.from_user.id, db_session)
-    await message.answer("Профиль обновлен!")
+    if user:
+        # TODO: Add update logic
+        await message.answer("Профиль обновлен!")
+    else:
+        await message.answer("Профиль не найден. Пожалуйста выполните команду /start, чтобы заполните профиль.")
 
 
 @dp.message(Command("profileinfo"))
@@ -105,13 +110,28 @@ async def show_profile_info(message: Message, db_session: Session):
         db_session (Session): The database session.
     """
     user = await get_user(message.from_user.id, db_session)
-    await message.answer("Информация о профиле")
+    if user:
+        await message.answer(f"""Информация о профиле:
+        Имя: {user.name}
+        Дата рождения: {user.birth_date}
+        Пол: {user.gender}
+        Рост: {user.height}
+        Вес: {user.weight}
+        Уровень активности: {user.activity_level}
+        Цель: {user.goal}
+        Ограничения здоровья: {user.health_restrictions}
+        Предпочтения по активностям: {user.preferred_activities}""")
+    else:
+        await message.answer("Профиль не найден. Пожалуйста выполните команду /start, чтобы заполните профиль.")
 
 
 @dp.message(Command("getrecommendation"))
 async def process_get_recommendations_command(message: Message, db_session: Session):
     user = await get_user(message.from_user.id, db_session)
-    await message.answer("Рекомендация")
+    if user:
+        await message.answer("Рекомендация")
+    else:
+        await message.answer("Профиль не найден. Пожалуйста выполните команду /start, чтобы заполните профиль.")
 
 
 @dp.message(Command("addactivity"))
@@ -124,11 +144,16 @@ async def process_add_activity_command(message: Message, db_session: Session):
         db_session (Session): The database session.
     """
     user = await get_user(message.from_user.id, db_session)
-    await message.answer("Активность добавлена!")
+    if user:
+        # TODO: Add adding activity logic
+        await message.answer("Активность добавлена!")
+    else:
+        await message.answer("Профиль не найден. Пожалуйста выполните команду /start, чтобы заполните профиль.")
 
-    
+
 @dp.message(Command("help"))
 async def process_help_command(message: Message):
+    # TODO: Add help message
     await message.answer("Помощь")
 
 

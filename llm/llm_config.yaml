@@ -8,5 +8,6 @@ openai:
   api_key_env: "OPENAI_API_KEY"
 
 yandex:
-  model: ""
-  iam_token: "IAM_TOKEN"
+  model: "yandexgpt-lite"
+  folder_id_env: "FOLDER_ID"
+  api_key_env: "YANDEX_API_KEY"
