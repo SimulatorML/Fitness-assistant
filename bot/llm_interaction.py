@@ -17,7 +17,7 @@ async def handle_llm_query(message: Message, db_session: DBSession):
     user = await get_user(telegram_id, db_session)
 
     if not user:
-        await message.answer("Вы не зарегистрированы! Пожалуйста, сначала пройдите регистрацию.")
+        await message.answer("Вы не зарегистрированы. Пожалуйста, используйте /start, чтобы зарегистрироваться.")
         return
 
     response = await process_fitness_query(message.text, telegram_id, db_session)

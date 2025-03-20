@@ -1,7 +1,7 @@
 from aiogram.fsm.state import State, StatesGroup
 from datetime import datetime
 from aiogram import Dispatcher
-from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
+from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from src.database.models import User, Action
 from src.schemas.action import ActionType
@@ -76,6 +76,7 @@ async def process_birth_date(message: Message, state: FSMContext):
     )
     await state.set_state(FSMFillForm.gender)
 
+
 async def process_gender(callback: CallbackQuery, state: FSMContext):
     """
     Handle the gender sent by the user and ask for the height.
@@ -108,6 +109,7 @@ async def process_height(message: Message, state: FSMContext):
     await state.update_data(height=height)
     await message.answer("Теперь введите ваш вес (в кг):")
     await state.set_state(FSMFillForm.weight)
+
 
 async def process_weight(message: Message, state: FSMContext):
     """
@@ -158,6 +160,7 @@ async def process_weight(message: Message, state: FSMContext):
     markup = InlineKeyboardMarkup(inline_keyboard=keyboard)
     await message.answer("Выберите Ваш уровень активности", reply_markup=markup)
     await state.set_state(FSMFillForm.activity_level)
+
 
 async def process_activity_level(callback: CallbackQuery, state: FSMContext):
     """
@@ -211,6 +214,7 @@ async def process_activity_level(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("Какая Ваша цель?", reply_markup=markup)
     await state.set_state(FSMFillForm.goal)
 
+
 async def process_goal(callback: CallbackQuery, state: FSMContext):
     """
     Handle the goal sent by the user and ask for the health restrictions.
@@ -223,6 +227,7 @@ async def process_goal(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("Напишите в вольной форме, есть ли у Вас какие-либо заболевания, травмы и т.д.:")
     await state.set_state(FSMFillForm.health_restrictions)
 
+
 async def process_health_restrictions(message: Message, state: FSMContext):
     """
     Handle the health restrictions sent by the user and ask for the preferred activities.
@@ -234,6 +239,7 @@ async def process_health_restrictions(message: Message, state: FSMContext):
     await state.update_data(health_restrictions=message.text)
     await message.answer("Есть ли у Вас какие-либо предпочтения по активностям (например каждую неделю плаваете, ходите в спортзал и т.д.)?")
     await state.set_state(FSMFillForm.preferred_activities)
+
 
 async def process_preferred_activities(message: Message, state: FSMContext, db_session: Session):
     """
@@ -256,6 +262,7 @@ async def process_preferred_activities(message: Message, state: FSMContext, db_s
     await db_session.commit()
     await message.answer("Отлично! Теперь, мы можем сможем давать Вам персонализированные рекомендации!\nЕсли что-то поменяется (вес, цели) - Вы можете изменить это в любое время")
     await state.clear()
+
 
 def register_onboarding_handlers(dp: Dispatcher):
     """
