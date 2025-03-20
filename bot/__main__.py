@@ -9,6 +9,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import Message, TelegramObject
 from sqlalchemy.orm import sessionmaker, Session
 from bot.onboarding import register_onboarding_handlers
+from bot.llm_interaction import router as llm_router
 from src.database.connection import session_maker
 from src.utils import get_user
 
@@ -42,6 +43,7 @@ dp = Dispatcher(storage=storage)
 db_session_middleware = DBSessionMiddleware(session_maker=session_maker)
 dp.message.middleware(db_session_middleware)
 dp.callback_query.middleware(db_session_middleware)
+dp.include_router(llm_router)
 
 
 class FSMFillForm(StatesGroup):

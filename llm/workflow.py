@@ -4,6 +4,9 @@ from src.utils import get_user
 from src.dependencies import DBSession
 from fastapi import HTTPException
 from collections import defaultdict
+from datetime import datetime
+from src.schemas.user import UserDTO
+
 
 llm = get_llm()
 
@@ -21,45 +24,37 @@ chat_history_store = defaultdict(list)
 async def get_user_info_dict(telegram_id: int, session: DBSession) -> dict:
     """
     Retrieves user details from the database based on telegram_id.
-    Uses mock user data if database is unavailable.
+    Converts user data automatically to a dictionary.
     """
-    try:
-        user_info = await get_user(telegram_id, session)
-        if not user_info:
-            raise HTTPException(status_code=404, detail="User not found")
-        user_info_dict = user_info.model_dump()
+    user_info = await get_user(telegram_id, session)
 
-    # use mock data (remove in future)
-    except Exception:
-        user_info_dict = {
-            "id": telegram_id,
-            "name": "Test User",
-            "age": 30,
-            "activity_level": "moderate",
-            "goal": "muscle_gain",
-        }
+    if not user_info:
+        raise HTTPException(status_code=404, detail="User not found. Please register first.")
+
+    # Convert the SQLAlchemy model to a dictionary
+    user_info_dict = UserDTO.model_validate(user_info).dict() 
+
+    user_info_dict["age"] = datetime.now().year - user_info.birth_date.year  
 
     return user_info_dict
 
 
-async def process_fitness_query(
-    user_query: str, user_id: int, session: DBSession
-) -> str:
+async def process_fitness_query(user_query: str, telegram_id: int, session: DBSession) -> str:
     """
     Processes a user query with user info and returns an AI-generated response.
 
     Args:
         user_query (str): The question asked by the user.
-        user_id (int): The user's ID.
+        telegram_id (int): The Telegram user's ID.
         session (DBSession): The database session.
 
     Returns:
         str: The AI-generated response.
     """
 
-    user_info_dict = await get_user_info_dict(user_id, session)
+    user_info_dict = await get_user_info_dict(telegram_id, session)
 
-    chat_history = chat_history_store[user_id]
+    chat_history = chat_history_store[telegram_id]
 
     chat_prompt = ChatPromptTemplate.from_messages(
         [
@@ -82,6 +77,7 @@ async def process_fitness_query(
 
     content = response.content
 
-    chat_history_store[user_id].append((user_query, content))
+    # Save conversation history
+    chat_history_store[telegram_id].append((user_query, content))
 
     return content

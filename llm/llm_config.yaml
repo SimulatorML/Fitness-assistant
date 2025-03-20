@@ -1,4 +1,4 @@
-llm_provider: "none"  # Options: google, openai, yandex or none (for debugging)
+llm_provider: "openai"  # Options: google, openai, yandex or none (for debugging)
 google:
   model: "gemini-2.0-flash"
   api_key_env: "GOOGLE_API_KEY"
