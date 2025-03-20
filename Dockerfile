@@ -1,11 +1,15 @@
-FROM python:3.12.7-slim
+#TODO: use multi-stage builds
+FROM python:3.12-slim
+
+RUN pip install poetry
 
 WORKDIR /app
 
-COPY ./requirements.txt ./requirements.txt
+COPY pyproject.toml poetry.lock /app/
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --no-root
+    
+COPY . /app
 
-COPY . .
-
-# CMD ["sh", "-c", "python -m api"]
+CMD ["poetry", "run", "python", "main.py"]
