@@ -12,6 +12,7 @@ class ActionType(str, Enum):
     LOG_MEAL = "log_meal"  # Логирование еды
     LOG_ACTIVITY = "log_activity"  # Логирование активности
 
+
 class Action(BaseDTO):
     """Schema for logging user actions."""
     time: datetime

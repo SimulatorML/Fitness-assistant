@@ -1,6 +1,7 @@
 from datetime import datetime
 from src.schemas.base import BaseDTO
 from enum import Enum
+from pydantic import computed_field
 
 
 class ActivityLevel(str, Enum):
@@ -9,6 +10,7 @@ class ActivityLevel(str, Enum):
     MODERATE = "moderate"  # Умеренная активность (тренировки 3-4 раза в неделю)
     HIGH = "high"  # Высокая активность (интенсивные тренировки 5+ раз в неделю)
     ATHLETE = "athlete"  # Профессиональный уровень (спортсмен, тренировки 2 раза в день)
+
 
 class Goal(str, Enum):
     fat_loss = "fat_loss"  # Сжигание жира
@@ -19,9 +21,11 @@ class Goal(str, Enum):
     flexibility = "flexibility"  # Улучшение гибкости
     health = "health"  # Общее улучшение здоровья
 
+
 class InterfaceLanguage(str, Enum):
     ENGLISH = "english"
     RUSSIAN = "russian"
+
 
 class UserCreate(BaseDTO):
     telegram_id: int
@@ -35,6 +39,7 @@ class UserCreate(BaseDTO):
     health_restrictions: str | None = None
     preferred_activities: str | None = None
 
+
 class UserUpdate(BaseDTO):
     name: str | None = None
     height: int | None = None
@@ -45,6 +50,7 @@ class UserUpdate(BaseDTO):
     goal: Goal | None = None
     health_restrictions: str | None = None
     preferred_activities: str | None = None
+
 
 class UserDTO(BaseDTO):
     id: int
@@ -60,3 +66,11 @@ class UserDTO(BaseDTO):
     preferred_activities: str | None = None
     created_at: datetime
     updated_at: datetime
+    
+    @computed_field(return_type=int)
+    @property
+    def age(self) -> int:
+        today = datetime.today()
+        return today.year - self.birth_date.year - (
+            (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
+        )
