@@ -1,11 +1,15 @@
+from datetime import datetime
+from fastapi import HTTPException
 from langchain_core.prompts import ChatPromptTemplate
 from llm.models import get_llm
 from src.utils import get_user
 from src.dependencies import DBSession
-from fastapi import HTTPException
-from collections import defaultdict
-from datetime import datetime
 from src.schemas.user import UserDTO
+from llm.chat_memory import (
+    get_recent_messages,
+    save_message_to_redis,
+    save_message_to_db,
+)
 
 
 llm = get_llm()
@@ -19,27 +23,17 @@ Always respond in the same language as the user's question, unless the user expl
 If the question contains multiple languages, prioritize the primary language of the query.
 """
 
-# In-memory storage for chat history: {telegram_id: [(user_input, ai_response)]} 
-# We should use a DB for production
-chat_history_store = defaultdict(list)  
 
-
-async def get_user_info_dict(telegram_id: int, session: DBSession) -> dict:
+async def get_user_info(telegram_id: int, session: DBSession) -> UserDTO:
     """
-    Retrieves user details from the database based on telegram_id.
-    Converts user data automatically to a dictionary.
+    Retrieves user details from the database based on telegram_id..
     """
-    user_info = await get_user(telegram_id, session)
+    user = await get_user(telegram_id, session)
 
-    if not user_info:
+    if not user:
         raise HTTPException(status_code=404, detail="User not found. Please register first.")
-
-    # Convert the SQLAlchemy model to a dictionary
-    user_info_dict = UserDTO.model_validate(user_info).dict() 
-
-    user_info_dict["age"] = datetime.now().year - user_info.birth_date.year  
-
-    return user_info_dict
+    
+    return UserDTO.model_validate(user)
 
 
 async def process_fitness_query(user_query: str, telegram_id: int, session: DBSession) -> str:
@@ -55,9 +49,10 @@ async def process_fitness_query(user_query: str, telegram_id: int, session: DBSe
         str: The AI-generated response.
     """
 
-    user_info_dict = await get_user_info_dict(telegram_id, session)
+    user_info = await get_user_info(telegram_id, session)
+    user_info_text = user_info.model_dump_json(indent=2)
 
-    chat_history = chat_history_store[telegram_id]
+    resent_chat_history = await get_recent_messages(telegram_id)
 
     chat_prompt = ChatPromptTemplate.from_messages(
         [
@@ -70,17 +65,21 @@ async def process_fitness_query(user_query: str, telegram_id: int, session: DBSe
 
     chain = chat_prompt | llm
 
-    response = chain.invoke(
+    response = await chain.ainvoke(
         {
             "query": user_query,
-            "user_info_text": user_info_dict,
-            "chat_history": chat_history,
+            "user_info_text": user_info_text,
+            "chat_history": resent_chat_history,
         }
     )
 
-    content = response.content
+    content = getattr(response, "content", None)
+    if not content:
+        raise HTTPException(status_code=500, detail="LLM returned an empty response.")
 
-    # Save conversation history
-    chat_history_store[telegram_id].append((user_query, content))
+    await save_message_to_redis(telegram_id, "user", user_query)
+    await save_message_to_redis(telegram_id, "assistant", content)
+    await save_message_to_db(telegram_id, "user", user_query, session)
+    await save_message_to_db(telegram_id, "assistant", content, session)
 
     return content

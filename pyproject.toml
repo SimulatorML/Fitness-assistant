@@ -36,6 +36,8 @@ aiogram = "^3.18.0"
 langchain-google-genai = "^2.0.11"
 alembic = "^1.15.1"
 pytest = "^8.3.5"
+redis = "^5.2.1"
+asyncio = "^3.4.3"
 
 
 [tool.poetry.group.dev.dependencies]

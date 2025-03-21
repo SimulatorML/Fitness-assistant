@@ -1,3 +1,4 @@
+import asyncio
 from dotenv import load_dotenv
 import os
 from typing import Callable, Dict, Any, Awaitable
@@ -12,6 +13,7 @@ from bot.onboarding import register_onboarding_handlers
 from bot.llm_interaction import router as llm_router
 from src.database.connection import session_maker
 from src.utils import get_user
+from src.dependencies.redis import startup, shutdown, get_redis
 
 
 load_dotenv()
@@ -145,5 +147,15 @@ async def process_delete_profile_command(message: Message, db_session: Session):
 register_onboarding_handlers(dp)
 
 
+async def main():
+    """Initialize Redis and start bot polling."""
+    await startup()  
+    try:
+        await dp.start_polling(bot)
+    finally:
+        await shutdown()
+
+
 if __name__ == '__main__':
-    dp.run_polling(bot)
+    #dp.run_polling(bot)
+    asyncio.run(main())

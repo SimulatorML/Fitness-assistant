@@ -91,6 +91,7 @@ async def process_gender(callback: CallbackQuery, state: FSMContext):
     )
     await state.set_state(FSMFillForm.height)
 
+
 async def process_height(message: Message, state: FSMContext):
     """
     Handle the height sent by the user and ask for the weight.
