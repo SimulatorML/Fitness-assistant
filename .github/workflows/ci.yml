@@ -70,21 +70,6 @@ jobs:
           echo "❌ Database not ready in time" >&2
           exit 1
 
-      - name: ✍️ Autogenerate Alembic migration
-        env:
-          DATABASE_URL: postgresql+asyncpg://fitness:fitness@localhost:5432/fitness
-        run: |
-          mkdir -p alembic_output
-          poetry run alembic revision --autogenerate -m "CI autogen" || echo "⚠️ No changes detected"
-          mv migrations/versions/*.py alembic_output/ || echo "No new migration files"
-
-      - name: 📦 Upload generated Alembic migrations
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: alembic-migrations
-          path: alembic_output/
-
       - name: 🛠 Run Alembic migrations
         env:
           DATABASE_URL: postgresql+asyncpg://fitness:fitness@localhost:5432/fitness

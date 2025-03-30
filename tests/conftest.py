@@ -1,5 +1,3 @@
-# tests/conftest.py
-
 import pytest_asyncio
 from api.app import get_application
 from httpx import AsyncClient
