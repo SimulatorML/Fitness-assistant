@@ -1,7 +1,6 @@
 import pytest
 from httpx import AsyncClient, ASGITransport
 
-
 @pytest.mark.asyncio
 async def test_redis_ping(app_with_redis):
     transport = ASGITransport(app=app_with_redis)
