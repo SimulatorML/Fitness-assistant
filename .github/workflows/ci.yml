@@ -39,11 +39,12 @@ jobs:
       - name: Load environment variables from .env.example 
         run: cp .env.example .env
 
-      - name: Export env variables
+      - name: Export env variables to GITHUB_ENV
         run: |
-          set -a
-          source .env
-          set +a
+          echo "Exporting variables to GITHUB_ENV"
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> $GITHUB_ENV
+          done < <(grep -v '^#' .env | xargs)
 
       - name: Print environment variables for debug
         run: printenv | grep DATABASE_URL || true
