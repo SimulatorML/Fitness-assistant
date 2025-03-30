@@ -70,7 +70,7 @@ jobs:
           echo "❌ Database not ready in time" >&2
           exit 1
 
-            - name: ✍️ Autogenerate Alembic migration
+      - name: ✍️ Autogenerate Alembic migration
         env:
           DATABASE_URL: postgresql+asyncpg://fitness:fitness@localhost:5432/fitness
         run: |
