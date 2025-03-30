@@ -5,6 +5,7 @@ from httpx import ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.connection import session_maker
 from dotenv import load_dotenv
+from src.dependencies.redis import startup, shutdown
 
 load_dotenv() 
 
@@ -12,6 +13,14 @@ load_dotenv()
 @pytest_asyncio.fixture
 async def app():
     return get_application()
+
+
+@pytest_asyncio.fixture
+async def app_with_redis():
+    app = get_application()
+    await startup()   # manually start Redis
+    yield app
+    await shutdown()  # manually shutdown Redis
 
 
 @pytest_asyncio.fixture
