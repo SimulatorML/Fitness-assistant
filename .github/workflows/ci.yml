@@ -1,3 +1,13 @@
+name: Fitness-Assistant CI
+
+on:
+  push:
+    branches:
+      - main  # Run tests on pushes to main
+  pull_request:
+    branches:
+      - main  # Run tests on PRs targeting main
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -26,26 +36,13 @@ jobs:
       - name: Install Dependencies
         run: poetry install
 
-      - name: Load environment variables
+      - name: Load environment variables from .env.example 
         run: cp .env.example .env
-
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
-
-      - name: Wait for PostgreSQL to be ready
-        run: |
-          for i in {1..10}; do
-            pg_isready -h db -p 5432 -U testuser -d testdb && exit 0
-            echo "Waiting for DB ($i)..."
-            sleep 3
-          done
-          echo "Database not ready in time" >&2
-          exit 1
 
       - name: Run FastAPI Tests
         run: poetry run python -m pytest tests/test_api.py
-
+      
       - name: Run Onboarding Test      
         run: poetry run python -m pytest tests/test_onboarding.py
+
+      
