@@ -3,14 +3,17 @@ from src.dependencies.redis import get_redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from src.database.models.message import Message
 from redis.asyncio import Redis
+from src.database.models import SubSummary
 from llm.config_loader import CONFIG
 from llm.models import get_llm
+from src.database.connection import session_maker
 import logging
 
 logger = logging.getLogger(__name__)
 
 MAX_RECENT_MESSAGES = CONFIG.get("max_recent_messages", 20)
 SUMMARY_SIZE = CONFIG.get("summary_chunk_size", 10)
+MAX_SUMMARY_STACK = CONFIG.get("max_summary_stack", 10)  
 
 
 async def save_message_to_redis(telegram_id: int, role: str, content: str, redis_client: Redis | None = None):
@@ -74,9 +77,18 @@ async def create_sub_summary(telegram_id: int, redis_client: Redis | None = None
     response = await llm.ainvoke(prompt)
 
     summary_key = f"user:{telegram_id}:sub_summaries"
+
+    # Check if stack of sub-summaries is full
+    current_stack = await redis_client.llen(summary_key)
+    if current_stack >= MAX_SUMMARY_STACK:
+        # Save to Postgres
+        await save_sub_summaries_to_db(telegram_id, redis_client)
+        await redis_client.delete(summary_key)  # Clear stack in Redis
+
+    # Push new summary
     await redis_client.rpush(summary_key, response.content)
 
-    # Drop the first SUMMARY_SIZE messages (the oldest ones)
+    # Trim recent history
     await redis_client.ltrim(key, SUMMARY_SIZE, -1)
 
 
@@ -91,3 +103,17 @@ async def get_latest_sub_summary(telegram_id: int, redis_client: Redis | None = 
     summary_key = f"user:{telegram_id}:sub_summaries"
     latest = await redis_client.lindex(summary_key, -1)
     return latest
+
+
+async def save_sub_summaries_to_db(telegram_id: int, redis_client: Redis):
+    summary_key = f"user:{telegram_id}:sub_summaries"
+    summaries = await redis_client.lrange(summary_key, 0, -1)
+
+    if not summaries:
+        return
+
+    async with session_maker() as session:
+        for s in summaries:
+            sub_summary = SubSummary(telegram_id=telegram_id, summary=s)
+            session.add(sub_summary)
+        await session.commit()

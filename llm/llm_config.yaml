@@ -13,3 +13,4 @@ yandex:
 
 max_recent_messages: 6
 summary_chunk_size: 3
+max_summary_stack: 2
