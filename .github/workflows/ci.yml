@@ -46,17 +46,11 @@ jobs:
             echo "$key=$value" >> $GITHUB_ENV
           done < <(grep -v '^#' .env | xargs)
 
+      - name: 🔁 Override DATABASE_URL for CI
+        run: echo "DATABASE_URL=postgresql+asyncpg://fitness:fitness@localhost:5432/fitness" >> $GITHUB_ENV
+
       - name: 🧪 Print env vars for debug
         run: printenv | grep DATABASE_URL || true
-
-      - name: 🧾 Print DB connection info
-        run: |
-          echo "📦 DATABASE_URL=$DATABASE_URL"
-          echo "🔐 PG USER=fitness"
-          echo "🔐 PG PASSWORD=fitness"
-          echo "📍 PG HOST=db"
-          echo "📍 PG PORT=5432"
-          echo "📁 PG DB=fitness"
 
       - name: 🛠 Install PostgreSQL client
         run: |
@@ -68,10 +62,9 @@ jobs:
           PGPASSWORD: fitness
         run: |
           echo "Waiting for PostgreSQL to be ready..."
-          for i in {1..40}; do
+          for i in {1..5}; do
             psql -h localhost -U fitness -d fitness -c 'SELECT 1;' && echo "✅ DB is up!" && exit 0
             echo "⏳ DB not ready yet ($i)..."
-            sleep 3
           done
           echo "❌ Database not ready in time" >&2
           exit 1
