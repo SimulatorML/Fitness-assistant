@@ -1,5 +1,6 @@
 from datetime import datetime
 from fastapi import HTTPException
+#from src.dependencies.redis import get_redis
 from langchain_core.prompts import ChatPromptTemplate
 from llm.models import get_llm
 from src.utils import get_user
@@ -9,8 +10,13 @@ from llm.chat_memory import (
     get_recent_messages,
     save_message_to_redis,
     save_message_to_db,
+    is_stack_full,
+    create_sub_summary,
+    get_latest_sub_summary,
 )
+import logging
 
+logger = logging.getLogger(__name__)
 
 llm = get_llm()
 
@@ -54,9 +60,18 @@ async def process_fitness_query(user_query: str, telegram_id: int, session: DBSe
 
     resent_chat_history = await get_recent_messages(telegram_id)
 
+    if await is_stack_full(telegram_id):
+        await create_sub_summary(telegram_id)
+
+    latest_summary = await get_latest_sub_summary(telegram_id)
+    summary_text = latest_summary or ""
+
+    logger.info(f"📌 Latest summary: {summary_text}")
+
     chat_prompt = ChatPromptTemplate.from_messages(
         [
             ("system", SYSTEM_PROMPT),
+            ("system", "Previous conversation summary:\n{summary_text}"),
             ("human", "User Info:\n{user_info_text}\n\n"),
             ("human", "Chat history:\n{chat_history}\n\n"),
             ("human", "User Question:\n{query}"),
@@ -67,6 +82,7 @@ async def process_fitness_query(user_query: str, telegram_id: int, session: DBSe
 
     response = await chain.ainvoke(
         {
+            "summary_text": summary_text,
             "query": user_query,
             "user_info_text": user_info_text,
             "chat_history": resent_chat_history,

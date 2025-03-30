@@ -7,6 +7,9 @@ from src.database.models import User, Action
 from src.schemas.action import ActionType
 from sqlalchemy.orm import Session
 from src.utils import calculate_age
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FSMFillForm(StatesGroup):
@@ -243,25 +246,27 @@ async def process_health_restrictions(message: Message, state: FSMContext):
 
 
 async def process_preferred_activities(message: Message, state: FSMContext, db_session: Session):
-    """
-    Handle the preferred activities sent by the user and save the user data to the database.
-    
-    Args:
-        message (Message): The message sent by the user.
-        state (FSMContext): The state machine context.
-        db_session (Session): The database session.
-    """
+    telegram_id = message.from_user.id
+
     await state.update_data(preferred_activities=message.text)
     data = await state.get_data()
-    data["telegram_id"] = message.from_user.id
+    data["telegram_id"] = telegram_id
+
+    logger.info(f"[{telegram_id}] Onboarding data collected: {data}")
+
     new_user = User(**data)
     db_session.add(new_user)
     await db_session.flush()
     await db_session.refresh(new_user)
+
+    logger.info(f"[{telegram_id}] User onboarding complete.")
+    logger.info(f"[{telegram_id}] New user saved to DB with ID {new_user.id}")
+
     action = Action(time=new_user.created_at, user_id=new_user.id, action_type=ActionType.REGISTRATION)
     db_session.add(action)
     await db_session.commit()
-    await message.answer("Отлично! Теперь, мы можем сможем давать Вам персонализированные рекомендации!\nЕсли что-то поменяется (вес, цели) - Вы можете изменить это в любое время")
+
+    await message.answer("Отлично! Теперь, мы можем сможем давать Вам персонализированные рекомендации!...")
     await state.clear()
 
 

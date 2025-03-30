@@ -3,46 +3,87 @@ name: Fitness-Assistant CI
 on:
   push:
     branches:
-      - main  # Run tests on pushes to main
+      - main
   pull_request:
     branches:
-      - main  # Run tests on PRs targeting main
+      - main
 
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
-      postgres:
+      db:
         image: postgres:15
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: testdb
+          POSTGRES_USER: fitness
+          POSTGRES_PASSWORD: fitness
+          POSTGRES_DB: fitness
         ports:
           - 5432:5432
 
     steps:
-      - name: Checkout repository
+      - name: 🧾 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
-      - name: Install Poetry
+      - name: 📦 Install Poetry
         run: pip install poetry
 
-      - name: Install Dependencies
+      - name: 📥 Install Dependencies
         run: poetry install
 
-      - name: Load environment variables from .env.example 
+      - name: 🗂 Copy environment variables from .env.example
         run: cp .env.example .env
 
-      - name: Run FastAPI Tests
-        run: poetry run python -m pytest tests/test_api.py
+      - name: 🔐 Export .env to GITHUB_ENV
+        run: |
+          echo "Exporting .env variables..."
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> $GITHUB_ENV
+          done < <(grep -v '^#' .env | xargs)
 
-      # - name: Run Telegram Bot Tests      # Add bot tests when are ready
-      #  run: poetry run python -m pytest tests/test_bot.py
+      - name: 🔁 Override DATABASE_URL for CI
+        run: echo "DATABASE_URL=postgresql+asyncpg://fitness:fitness@localhost:5432/fitness" >> $GITHUB_ENV
 
-      
+      - name: 🧪 Print env vars for debug
+        run: printenv | grep DATABASE_URL || true
+
+      - name: 🛠 Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: ⏳ Wait for PostgreSQL to be ready
+        env:
+          PGPASSWORD: fitness
+        run: |
+          echo "Waiting for PostgreSQL to be ready..."
+          for i in {1..5}; do
+            psql -h localhost -U fitness -d fitness -c 'SELECT 1;' && echo "✅ DB is up!" && exit 0
+            echo "⏳ DB not ready yet ($i)..."
+            sleep 3
+          done
+          echo "❌ Database not ready in time" >&2
+          exit 1
+
+      - name: 🛠 Run Alembic migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://fitness:fitness@localhost:5432/fitness
+        run: poetry run alembic upgrade head
+
+      - name: 📋 Check existing tables
+        env:
+          PGPASSWORD: fitness
+        run: |
+          echo "📋 Tables in the DB:"
+          psql -h localhost -U fitness -d fitness -c '\dt'
+
+      - name: ✅ Run FastAPI Tests
+        run: poetry run pytest tests/test_api.py
+
+      - name: ✅ Run Onboarding Test
+        run: poetry run pytest tests/test_onboarding.py

@@ -3,6 +3,7 @@ repos:
     hooks:
       - id: pytest-check
         name: Run Pytest Before Commit
-        entry: poetry run python -m pytest
+        # here test only api
+        entry: poetry run pytest tests/test_api.py
         language: system
         pass_filenames: false

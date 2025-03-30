@@ -1,12 +1,8 @@
-from fastapi.testclient import TestClient
-from api.app import get_application
+import pytest
 
-# Create a test client
-app = get_application()
-client = TestClient(app)
 
-def test_health_check():
+@pytest.mark.asyncio
+async def test_root(client):
     """Test if the API root is accessible"""
-    response = client.get("/")
-    assert response.status_code == 200  
-
+    response = await client.get("/") 
+    assert response.status_code == 200

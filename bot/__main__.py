@@ -13,10 +13,11 @@ from bot.onboarding import register_onboarding_handlers
 from bot.llm_interaction import router as llm_router
 from src.database.connection import session_maker
 from src.utils import get_user
-from src.dependencies.redis import startup, shutdown, get_redis
-
+from src.dependencies.redis import startup, shutdown
+from src.logging_config import setup_logging
 
 load_dotenv()
+
 
 class DBSessionMiddleware(BaseMiddleware):
     """
@@ -149,6 +150,7 @@ register_onboarding_handlers(dp)
 
 async def main():
     """Initialize Redis and start bot polling."""
+    setup_logging()
     await startup()  
     try:
         await dp.start_polling(bot)
@@ -157,5 +159,4 @@ async def main():
 
 
 if __name__ == '__main__':
-    #dp.run_polling(bot)
     asyncio.run(main())

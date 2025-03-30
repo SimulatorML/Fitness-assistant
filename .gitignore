@@ -3,8 +3,5 @@ __pycache__/
 .idea/
 .DS_Store
 /db_data
-/src/migrations/versions
 .pytest_cache
 .venv/
-/tests/test_users.py
-test.ipynb
