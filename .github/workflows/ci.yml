@@ -42,7 +42,7 @@ jobs:
       - name: Run FastAPI Tests
         run: poetry run python -m pytest tests/test_api.py
 
-      # - name: Run Telegram Bot Tests      # Add bot tests when are ready
-      #  run: poetry run python -m pytest tests/test_bot.py
+      - name: Run Onboarding Test      
+        run: poetry run python -m pytest tests/test_onboarding.py
 
       
