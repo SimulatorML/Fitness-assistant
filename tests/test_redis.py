@@ -8,8 +8,8 @@ async def test_redis_ping():
     
     app = get_application()
 
-    transport = ASGITransport(app=app, lifespan="on")
-    
+    transport = ASGITransport(app=app)
+
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         res = await client.get("/api/v1/redis/ping")
         assert res.status_code == 200
