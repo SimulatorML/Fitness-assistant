@@ -65,6 +65,7 @@ jobs:
           for i in {1..5}; do
             psql -h localhost -U fitness -d fitness -c 'SELECT 1;' && echo "✅ DB is up!" && exit 0
             echo "⏳ DB not ready yet ($i)..."
+            sleep 3
           done
           echo "❌ Database not ready in time" >&2
           exit 1
@@ -73,6 +74,13 @@ jobs:
         env:
           DATABASE_URL: postgresql+asyncpg://fitness:fitness@localhost:5432/fitness
         run: poetry run alembic upgrade head
+
+      - name: 📋 Check existing tables
+        env:
+          PGPASSWORD: fitness
+        run: |
+          echo "📋 Tables in the DB:"
+          psql -h localhost -U fitness -d fitness -c '\dt'
 
       - name: ✅ Run FastAPI Tests
         run: poetry run pytest tests/test_api.py
