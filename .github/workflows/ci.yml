@@ -64,15 +64,16 @@ jobs:
           sudo apt-get install -y postgresql-client
 
       - name: Wait for PostgreSQL to be ready
+        env:
+          PGPASSWORD: fitness
         run: |
-          echo "Waiting a bit for PostgreSQL to start..."
-          sleep 5
+          echo "Waiting for PostgreSQL to be ready..."
           for i in {1..20}; do
-            pg_isready -h db -p 5432 -U fitness && exit 0
-            echo "Waiting for db ($i)..."
+            psql -h db -U fitness -d fitness -c '\q' && echo "✅ DB is up!" && exit 0
+            echo "⏳ DB not ready yet ($i)..."
             sleep 3
           done
-          echo "Database not ready in time" >&2
+          echo "❌ Database not ready in time" >&2
           exit 1
 
       - name: Run FastAPI Tests
