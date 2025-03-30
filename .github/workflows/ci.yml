@@ -22,34 +22,34 @@ jobs:
           - 5432:5432
 
     steps:
-      - name: Checkout repository
+      - name: 🧾 Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: 🐍 Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.12"
 
-      - name: Install Poetry
+      - name: 📦 Install Poetry
         run: pip install poetry
 
-      - name: Install Dependencies
+      - name: 📥 Install Dependencies
         run: poetry install
 
-      - name: Load environment variables from .env.example 
+      - name: 🗂 Copy environment variables from .env.example
         run: cp .env.example .env
 
-      - name: Export env variables to GITHUB_ENV
+      - name: 🔐 Export .env to GITHUB_ENV
         run: |
-          echo "Exporting variables to GITHUB_ENV"
+          echo "Exporting .env variables..."
           while IFS='=' read -r key value; do
             echo "$key=$value" >> $GITHUB_ENV
           done < <(grep -v '^#' .env | xargs)
 
-      - name: Print environment variables for debug
+      - name: 🧪 Print env vars for debug
         run: printenv | grep DATABASE_URL || true
 
-      - name: Print DB connection info
+      - name: 🧾 Print DB connection info
         run: |
           echo "📦 DATABASE_URL=$DATABASE_URL"
           echo "🔐 PG USER=fitness"
@@ -58,26 +58,27 @@ jobs:
           echo "📍 PG PORT=5432"
           echo "📁 PG DB=fitness"
 
-      - name: Install PostgreSQL client
+      - name: 🛠 Install PostgreSQL client
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
 
-      - name: Wait for PostgreSQL to be ready
+      - name: ⏳ Wait for PostgreSQL to be ready
         env:
           PGPASSWORD: fitness
         run: |
           echo "Waiting for PostgreSQL to be ready..."
-          for i in {1..20}; do
-            psql -h db -U fitness -d fitness -c '\q' && echo "✅ DB is up!" && exit 0
+          for i in {1..40}; do
+            psql -h db -U fitness -d fitness -c 'SELECT 1;' && echo "✅ DB is up!" && exit 0
             echo "⏳ DB not ready yet ($i)..."
             sleep 3
           done
           echo "❌ Database not ready in time" >&2
+          docker logs $(docker ps -q --filter name=postgres) || true
           exit 1
 
-      - name: Run FastAPI Tests
+      - name: ✅ Run FastAPI Tests
         run: poetry run pytest tests/test_api.py
-      
-      - name: Run Onboarding Test      
+
+      - name: ✅ Run Onboarding Test
         run: poetry run pytest tests/test_onboarding.py
