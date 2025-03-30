@@ -70,8 +70,10 @@ jobs:
           exit 1
 
       - name: 🛠 Run Alembic migrations
+        env:
+          DATABASE_URL: postgresql+asyncpg://fitness:fitness@localhost:5432/fitness
         run: poetry run alembic upgrade head
-        
+
       - name: ✅ Run FastAPI Tests
         run: poetry run pytest tests/test_api.py
 
