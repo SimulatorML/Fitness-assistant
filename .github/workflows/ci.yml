@@ -15,9 +15,9 @@ jobs:
       db:
         image: postgres:15
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: testdb
+          POSTGRES_USER: fitness
+          POSTGRES_PASSWORD: fitness
+          POSTGRES_DB: fitness
         ports:
           - 5432:5432
 
@@ -52,11 +52,11 @@ jobs:
       - name: Print DB connection info
         run: |
           echo "📦 DATABASE_URL=$DATABASE_URL"
-          echo "🔐 PG USER=testuser"
-          echo "🔐 PG PASSWORD=testpassword"
+          echo "🔐 PG USER=fitness"
+          echo "🔐 PG PASSWORD=fitness"
           echo "📍 PG HOST=db"
           echo "📍 PG PORT=5432"
-          echo "📁 PG DB=testdb"
+          echo "📁 PG DB=fitness"
 
       - name: Install PostgreSQL client
         run: |
@@ -68,7 +68,7 @@ jobs:
           echo "Waiting a bit for PostgreSQL to start..."
           sleep 5
           for i in {1..20}; do
-            pg_isready -h db -p 5432 -U testuser && exit 0
+            pg_isready -h db -p 5432 -U fitness && exit 0
             echo "Waiting for db ($i)..."
             sleep 3
           done
