@@ -89,8 +89,8 @@ jobs:
       - name: ✅ Run FastAPI Tests
         run: poetry run pytest tests/test_api.py
 
-      - name: ✅ Run Redis Test
-        run: poetry run pytest tests/test_redis.py
-
       - name: ✅ Run Onboarding Test
         run: poetry run pytest tests/test_onboarding.py
+
+      - name: ✅ Run Redis Test
+        run: poetry run pytest tests/test_redis.py
