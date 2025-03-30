@@ -1,4 +1,4 @@
-llm_provider: "openai"  # Options: google, openai, yandex or none (for debugging)
+llm_provider: "google"  # Options: google, openai, yandex or none (for debugging)
 google:
   model: "gemini-2.0-flash"
   api_key_env: "GOOGLE_API_KEY"
@@ -11,4 +11,5 @@ yandex:
   model: ""
   iam_token: "IAM_TOKEN"
 
-max_recent_messages: 10 
+max_recent_messages: 6
+summary_chunk_size: 3
