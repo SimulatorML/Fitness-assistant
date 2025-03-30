@@ -20,6 +20,10 @@ jobs:
           POSTGRES_DB: fitness
         ports:
           - 5432:5432
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
 
     steps:
       - name: 🧾 Checkout repository
@@ -87,3 +91,6 @@ jobs:
 
       - name: ✅ Run Onboarding Test
         run: poetry run pytest tests/test_onboarding.py
+
+      - name: ✅ Run Redis Test
+        run: poetry run pytest tests/test_redis.py

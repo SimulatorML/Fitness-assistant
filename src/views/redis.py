@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from src.dependencies.redis import get_redis
 import json
 
-router = APIRouter(prefix="/redis", tags=["redis"])
+router = APIRouter(tags=["redis"])
 
 
 @router.get("/ping")
