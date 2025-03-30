@@ -39,11 +39,14 @@ jobs:
       - name: Load environment variables from .env.example 
         run: cp .env.example .env
 
-      - name: Print environment variables for debug
-        run: printenv | grep POSTGRES || true
-
-      - name: Show .env contents
-        run: cat .env || echo ".env file not found"
+      - name: Print DB connection info
+        run: |
+          echo "📦 DATABASE_URL=$DATABASE_URL"
+          echo "🔐 PG USER=testuser"
+          echo "🔐 PG PASSWORD=testpassword"
+          echo "📍 PG HOST=db"
+          echo "📍 PG PORT=5432"
+          echo "📁 PG DB=testdb"
 
       - name: Install PostgreSQL client
         run: |
@@ -52,18 +55,15 @@ jobs:
 
       - name: Wait for PostgreSQL to be ready
         run: |
-          echo "Waiting for PostgreSQL to start..."
+          echo "Waiting a bit for PostgreSQL to start..."
+          sleep 5
           for i in {1..20}; do
-            pg_isready -h db -p 5432 -U testuser && break
+            pg_isready -h db -p 5432 -U testuser && exit 0
             echo "Waiting for db ($i)..."
             sleep 3
           done
-          echo "PostgreSQL is ready."
-
-      - name: Verify PostgreSQL Connection
-        run: |
-          echo "Testing DB connection with psql..."
-          PGPASSWORD=testpassword psql -h db -U testuser -d testdb -c '\q'
+          echo "Database not ready in time" >&2
+          exit 1
 
       - name: Run FastAPI Tests
         run: poetry run pytest tests/test_api.py
