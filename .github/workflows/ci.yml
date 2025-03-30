@@ -44,7 +44,8 @@ jobs:
       
       - name: Test PostgreSQL connection
         run: |
-          apt-get update && apt-get install -y postgresql-client
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
           pg_isready -h db -p 5432 -U testuser -d testdb
 
       - name: Run Onboarding Test      
