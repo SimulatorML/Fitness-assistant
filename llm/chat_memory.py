@@ -5,6 +5,9 @@ from src.database.models.message import Message
 from redis.asyncio import Redis
 from llm.config_loader import CONFIG
 from llm.models import get_llm
+import logging
+
+logger = logging.getLogger(__name__)
 
 MAX_RECENT_MESSAGES = CONFIG.get("max_recent_messages", 20)
 SUMMARY_SIZE = CONFIG.get("summary_chunk_size", 10)

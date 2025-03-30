@@ -14,16 +14,9 @@ from llm.chat_memory import (
     create_sub_summary,
     get_latest_sub_summary,
 )
-
 import logging
 
-logging.basicConfig(
-    level=logging.DEBUG,  # or INFO
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
-
 logger = logging.getLogger(__name__)
-
 
 llm = get_llm()
 

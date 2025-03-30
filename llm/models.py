@@ -5,7 +5,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 from llm.config_loader import CONFIG
 
-
 load_dotenv()
 
 
