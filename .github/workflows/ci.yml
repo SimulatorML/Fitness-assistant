@@ -40,14 +40,14 @@ jobs:
         run: cp .env.example .env
 
       - name: Export env variables
-          run: |
-            set -a
-            source .env
-            set +a
+        run: |
+          set -a
+          source .env
+          set +a
 
       - name: Print environment variables for debug
         run: printenv | grep DATABASE_URL || true
-        
+
       - name: Print DB connection info
         run: |
           echo "📦 DATABASE_URL=$DATABASE_URL"
