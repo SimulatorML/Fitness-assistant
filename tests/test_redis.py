@@ -18,7 +18,7 @@ async def test_redis_ping():
 
     async with LifespanManager(app):
         with TestClient(app) as sync_client:
-            async with AsyncClient(base_url="http://test", transport=sync_client.transport) as client:
+            async with AsyncClient(base_url="http://test", transport=sync_client._transport) as client:
                 res = await client.get("/api/v1/redis/ping")
                 assert res.status_code == 200
                 data = res.json()
